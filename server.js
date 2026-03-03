@@ -16,14 +16,19 @@ app.use(helmet({
 }))
 app.use(morgan('dev'))
 app.use(express.json())
-app.use(cors())
+app.use(
+  cors({
+    origin: 'https://crud-pern-frontend-three.vercel.app',
+    credentials: true
+  })
+)
 const __dirname = path.resolve()
 
 app.use(async (req, res, next) => {
   try {
     const decision = await aj.protect(req, { requested: 1 }) // Deduct 5 tokens from the bucket
     console.log('Arcjet decision', decision)
-
+console.log(decision.ip.isHosting)
     if (decision.isDenied()) {
       if (decision.reason.isRateLimit()) {
         return res.status(429).json({ error: 'Too many requests' })
@@ -32,9 +37,11 @@ app.use(async (req, res, next) => {
       } else {
         return res.status(403).json({ error: 'Forbidden' })
       }
-    } else if (decision.ip.isHosting()) {
-      return res.status(403).json({ error: 'Forbidden' })
-    } else if (decision.results.some(isSpoofedBot)) {
+    }
+    // else if (decision.ip.isHosting()) {
+    //   return res.status(403).json({ error: 'Forbidden' })
+  //}
+     else if (decision.results.some(isSpoofedBot)) {
       return res.status(403).json({ error: 'Forbidden' })
     }
     next()
